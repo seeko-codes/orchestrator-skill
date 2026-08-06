@@ -85,6 +85,9 @@ Spanning of *tasks* does not guarantee the *composition* works — n green slice
 2. All implementation happens in git worktrees; the main checkout stays clean.
 3. Every subagent gets a deliberately chosen model tier and reasoning effort — matched to the slice's difficulty, never mismatched in either direction.
 4. Subagent reports return **conclusions and rejected alternatives**, not file dumps.
+5. **Delegation is one level deep — subagents never delegate.** Every dispatch brief states it verbatim. A subagent that needs to delegate is proof the slice was too big; the fix is re-slicing by the orchestrator, never a second layer of orchestration — nested delegation loses the brief's context at every hop, hides work from review, and breaks the fleet plan's tier assignments.
+6. **Completion is a clean commit, not a report file.** Agents scaffold reports early, so a report's existence proves nothing; anything watching for completion keys on committed-and-clean state.
+7. **Terminal hygiene.** Once a delegate's work is reviewed and merged (or discarded), its terminal closes — stale idle sessions are where rogue agents hide. At every batch boundary, audit the live agents: each one must map to a task the orchestrator currently owns.
 
 These rules guard *implementation*, not conversation: answering questions, reading and explaining code, git operations, and read-only commands stay in the main thread — no delegation theater for a one-line answer.
 
