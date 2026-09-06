@@ -16,12 +16,6 @@ Resolve shared contracts before dependent work. Group ready independent slices i
 refine future batches after verified integration. Re-slice oversized work relative to its
 own deliverable. Verify both individual outputs and their composition.
 
-Implementation slices should produce replaceable components: consumers depend on stable
-public contracts rather than private implementation details. Define dependencies, owned state,
-and wiring explicitly; verify substitution during hardening. Use lightweight interfaces instead
-of requiring a plugin framework. Replacement can still require coordinated state migration.
-See [component boundaries](orchestrator/doctrine/components.md).
-
 ## Capability, context, and autonomy
 
 The manager requests the smartest available model at maximum supported reasoning effort.
