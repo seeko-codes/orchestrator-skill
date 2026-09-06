@@ -34,6 +34,15 @@ The manager observes context occupancy; exceeding the ceiling means the assignme
 large for its budget. Telemetry may be measured, estimated, or unavailable and must be labeled.
 These instructions do not install monitoring or native handoff controls.
 
+Keep decisions that change together within one slice. Repeated coordination is a signal to
+reconsider boundaries. Test the assumption most likely to invalidate substantial downstream
+work before committing to it; bring forward checks needed to establish feasibility.
+
+The human chooses or approves subagent effort before dispatch, preferably in one batch of
+recommendations with their tradeoffs. Honor existing approvals within their stated scope;
+ask before uncovered assignments or effort changes. Preserve approvals across handoffs.
+Maximum-effort manager roles remain the standing policy; disclose runtime limitations honestly.
+
 ## Exploration before hardening
 
 When arrangement is uncertain, map alternatives broadly and use focused prototypes to resolve
