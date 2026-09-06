@@ -34,6 +34,15 @@ The manager observes context occupancy; exceeding the ceiling means the assignme
 large for its budget. Telemetry may be measured, estimated, or unavailable and must be labeled.
 These instructions do not install monitoring or native handoff controls.
 
+## Exploration before hardening
+
+When arrangement is uncertain, map alternatives broadly and use focused prototypes to resolve
+structural questions. Defer the full lean-quality workflow until the selected scope has coherent
+responsibilities, exercised seams, and settled acceptance. Retained prototypes then enter
+hardening: honest characterization tests, TDD for new behavior/fixes, integration checks, and
+inspected screenshots plus interactions for UI. Prototype checkpoints are not production completion.
+See [implementation stages](orchestrator/doctrine/stages.md).
+
 ## Optional Wayfinder
 
 Wayfinder owns the larger sequence and automatic manager handoffs where the runtime supports
