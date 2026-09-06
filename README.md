@@ -55,7 +55,10 @@ Usage is labeled measured, estimated, or unknown. The skill does not install mon
 Optional **Wayfinder** manages orchestrators, which manage helpers. Without it, there is one
 manager and helpers cannot delegate. Automatic handoffs and extra management depth depend on
 the running application's capabilities. The human owns the highest-level direction and
-consequential uncertain choices.
+consequential uncertain choices. When purpose, scope, or priorities are unclear, use the
+optional `grill-with-docs` companion to examine one decision at a time. The agent investigates
+and recommends; the human decides. `wait-what` remains an optional way to request a clearer
+explanation.
 
 ## Follow the work
 
@@ -83,7 +86,7 @@ directory. Start at [orchestrator/SKILL.md](orchestrator/SKILL.md). Supporting f
 [Wayfinder](orchestrator/WAYFINDER.md), [visibility](orchestrator/VISIBILITY.md),
 and [runtime adapters](orchestrator/SUBAGENTS.md).
 
-Optional companions `model-strategy` and `lean-quality` are in
+Optional companions `model-strategy`, `lean-quality`, `grill-with-docs`, and `wait-what` are in
 [andres-skills](https://github.com/seeko-codes/andres-skills). The standalone skill includes
 fallback selection and verification guidance when they are absent. Native tools, permissions,
 model availability, nesting, and context telemetry remain runtime constraints.
