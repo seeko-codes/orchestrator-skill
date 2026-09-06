@@ -1,70 +1,73 @@
 # Orchestrator
 
-Context management through breadth-first planning and a small capable autonomous team.
-This standalone package mirrors the orchestrator in [andres-skills](https://github.com/seeko-codes/andres-skills).
+A skill for handling large goals with a small, capable team of agents. One manager keeps
+the whole goal in view; each helper gets a focused job and the information needed to do it.
+This package mirrors the orchestrator in [andres-skills](https://github.com/seeko-codes/andres-skills).
 
-## Core model: batches as a basis
+## How it works
 
-The horizontal slice is the complete goal H. Vertical slices are cohesive contributions
-whose deliverables collectively cover it across all batches. Concurrent slices have disjoint
-write ownership and no unresolved dependency on each other's unfinished outputs. Shared
-reading is allowed. The basis analogy describes coverage and independent construction;
-it is not a literal linear-algebra guarantee of behavioral correctness.
+First map the whole result, then narrow down the work. Give related decisions to one owner,
+make the pieces easy to replace, and check that together they cover everything you asked for.
+The technical instructions call the whole goal a **horizontal slice** and each contribution
+a **vertical slice**. The mathematical analogy helps explain coverage and independence;
+it does not prove the resulting software correct.
 
-Plan breadth first: establish the whole target, shared constraints, and dependencies.
-Resolve shared contracts before dependent work. Group ready independent slices into batches;
-refine future batches after verified integration. Re-slice oversized work relative to its
-own deliverable. Verify both individual outputs and their composition.
+Ready, independent jobs can run together in a batch. A job that needs another's result waits
+for a later batch. If helpers repeatedly need one another's unfinished decisions, reconsider
+the split. The manager checks individual results and how they work together.
 
-## Capability, context, and autonomy
+Each helper gets relevant requirements, files, constraints, and a way to check its result.
+It makes local decisions independently and brings shared decisions back to the manager.
+This gives specialization, useful parallel work, and less unrelated information in each chat.
+Small tasks stay with one agent.
 
-The manager requests the smartest available model at maximum supported reasoning effort.
-Subagents may match it or use less where sufficient. Prefer fewer capable autonomous owners
-over a hierarchy of weak agents. The manager retains global responsibility and gives each
-worker a locally complete contract: relevant sources, interfaces, constraints, acceptance,
-and authority. Workers make local choices and escalate cross-slice decisions.
+## Explore, then strengthen
 
-| User parameter | Default | Purpose |
-|---|---|---|
-| `max_context_per_agent` | `100000` tokens | Context ceiling for every agent |
-| `context_warning_fraction` | `0.8` | Checkpoint before the ceiling |
-| `wayfinder` | `false` | Continuity across goals and manager sessions |
+When the arrangement is uncertain, try small experiments before investing in a full build.
+Start with the uncertainty most likely to invalidate later work. Keep existing protections
+and the checks needed to trust the experiment.
 
-The manager observes context occupancy; exceeding the ceiling means the assignment was too
-large for its budget. Telemetry may be measured, estimated, or unavailable and must be labeled.
-These instructions do not install monitoring or native handoff controls.
-
-Keep decisions that change together within one slice. Repeated coordination is a signal to
-reconsider boundaries. Test the assumption most likely to invalidate substantial downstream
-work before committing to it; bring forward checks needed to establish feasibility.
-
-The human chooses or approves subagent effort before dispatch, preferably in one batch of
-recommendations with their tradeoffs. Honor existing approvals within their stated scope;
-ask before uncovered assignments or effort changes. Preserve approvals across handoffs.
-Maximum-effort manager roles remain the standing policy; disclose runtime limitations honestly.
-
-## Exploration before hardening
-
-When arrangement is uncertain, map alternatives broadly and use focused prototypes to resolve
-structural questions. Defer the full lean-quality workflow until the selected scope has coherent
-responsibilities, exercised seams, and settled acceptance. Retained prototypes then enter
-hardening: honest characterization tests, TDD for new behavior/fixes, integration checks, and
-inspected screenshots plus interactions for UI. Prototype checkpoints are not production completion.
+Once responsibilities, connections, and expected behavior make sense, strengthen the code
+being kept. Check existing behavior; for new behavior and fixes, first demonstrate a failing
+check, then make it pass, then clean up. This is test-driven development (TDD). For interfaces,
+try actual interactions and inspect screenshots. A useful prototype is not yet production-ready.
 See [implementation stages](orchestrator/doctrine/stages.md).
 
-## Optional Wayfinder
+## Your choices
 
-Wayfinder owns the larger sequence and automatic manager handoffs where the runtime supports
-them. It is the sole nesting exception: Wayfinder → orchestrators → leaf workers. Ordinary
-orchestrators cannot spawn managers, and workers cannot delegate. If runtime depth is insufficient,
-retain Wayfinder duties in the main manager with one worker layer and explain the limitation.
-The human owns highest-level direction and consequential uncertain decisions.
+The manager uses the strongest available model and maximum supported reasoning effort.
+Helpers may use the same capability or less, depending on the job. The manager recommends
+helper effort with reasons and tradeoffs; you approve it before launch. Approval can cover
+a batch or stated policy and persists within that scope. Uncovered changes return to you.
+Unavailable settings are reported honestly.
 
-## Visible operation
+| Option | Default | What it means |
+|---|---|---|
+| `max_context_per_agent` | `100000` tokens | Working-context ceiling for every agent. Tokens are units of model-processed text. |
+| `context_warning_fraction` | `0.8` | Save progress and replan at 80% of the ceiling. |
+| `wayfinder` | `false` | Add a coordinator for a longer sequence of manager sessions. |
 
-Show the overall sequence, current batch, each assignment's purpose, model/effort, dependencies,
-context/limit, and status. Explain actions and reasons at meaningful transitions and during long
-work. Centralize worker updates so the human can follow the process without reading every chat.
+Set options in your request or project instructions. Context includes instructions, inputs,
+history, and space for the answer, not cumulative billed usage. Crossing the ceiling means
+the job was too large for its budget: preserve progress and narrow the remaining work.
+Usage is labeled measured, estimated, or unknown. The skill does not install monitoring.
+
+Optional **Wayfinder** manages orchestrators, which manage helpers. Without it, there is one
+manager and helpers cannot delegate. Automatic handoffs and extra management depth depend on
+the running application's capabilities. The human owns the highest-level direction and
+consequential uncertain choices.
+
+## Follow the work
+
+Expect one readable view of the goal, current batch, each agent's job and purpose, model,
+effort, context usage, dependencies, and progress. Updates explain what is happening and why,
+including blockers, changed decisions, checks, and handoffs.
+
+Agent instructions and technical records retain standard method names. Human explanations
+describe the underlying action and purpose without requiring you to know the vocabulary.
+The [reference shelf](orchestrator/REFERENCES.md) links to original design methods and relevant
+guidance. It is consulted for a specific unresolved question, not loaded automatically.
+Authoritative references improve grounding; they do not guarantee correct reasoning.
 
 ## Install
 
