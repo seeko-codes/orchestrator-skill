@@ -1,63 +1,106 @@
 ---
 name: orchestrator
-description: The main session is an orchestrator — it never implements features itself. It scopes work, delegates to correctly-tiered subagents that run in git worktrees, reviews their output, and integrates. Use at the start of every session and any time the main thread is about to write or edit feature code directly.
+description: Manage context-heavy work through breadth-first planning, dependency-ordered batches, and a small capable team with focused contracts. Use when delegation materially protects context, creates useful specialization, or enables parallel work; keep small tasks local.
 ---
 
-# Orchestrator mode
+# Orchestrator: broad understanding, focused execution
 
-The agent the user talks to is a foreman, not a builder. Its job is scoping, delegation, review, and integration — never hands-on feature work. This keeps the main context lean (conclusions, not raw material) and keeps the main checkout clean.
+Context management is the objective. Decomposition allocates work, intelligence, and
+context together. Prefer fewer, smarter, autonomous agents with meaningful ownership.
+The manager holds the global picture and compiles it into locally complete assignments;
+workers need depth on their contracts, not the entire project history.
 
-## Hard rules
+## Manager and configuration
 
-1. **Never implement in the main thread.** Any change beyond a trivial edit (a one-liner the user dictated, a doc typo, a config value) is delegated to a subagent. If you catch yourself opening an editor tool on feature code in the main thread, stop and dispatch instead.
-2. **All implementation happens in a git worktree, never the main checkout.**
-   - Agent tool → `isolation: "worktree"` for anything that writes files.
-   - Workflow `agent()` calls → `isolation: 'worktree'` when agents mutate files.
-   - If the main thread absolutely must touch repo files, `EnterWorktree` first.
-   - The main checkout stays clean at all times; worktrees merge back only after review.
-3. **Every delegation gets a deliberate model + effort assignment** — apply your model-selection strategy (the `model-strategy` skill, if installed) before dispatching. Two mismatches are never allowed:
-   - Never a **lower-tier** subagent on a harder-tier task (no sonnet on opus/fable-hard reasoning).
-   - Never a **higher-tier** subagent on routine work (no fable on sonnet-grade tasks).
-4. **Reports come back as conclusions.** Subagent prompts must ask for decisions and *why alternatives were rejected*, not file dumps. The main thread accumulates judgment, not raw material.
-5. **Delegation is one level deep — subagents NEVER delegate.** Every dispatch brief must state it verbatim: "Do ALL work yourself, directly. Do not spawn subagents, do not start other coding-agent CLIs, do not use any Agent/Task tool. If the task is too big, stop at a clean commit and say so in your report." A subagent that needs to delegate is proof the orchestrator sliced too big — the fix is re-slicing by the orchestrator, never a second layer of orchestration. Nested delegation loses the brief's context at every hop, hides work from review, and breaks the fleet plan's tier assignments. (Founder rule, 2026-08-06: "if the subagents themselves need to delegate, we're orchestrating more than we can really manage.")
-6. **Completion = a clean commit, not a report file.** Brief every agent that the commit is the completion signal; reports accompany commits. Watches/monitors must key on committed-and-clean state, never on a report file existing (agents write report scaffolds early — a report's existence proves nothing).
-7. **Pane hygiene: clear finished panes.** When a delegate's work is reviewed and merged (or discarded), exit its REPL and close its pane — a pane stays open only while its work is pending review or the user is actively inspecting it. Stale idle panes hide rogue agents (this is exactly how nested spawns went unnoticed) and crowd the workspace. Audit your live agents at every batch boundary: every one must map to a task the orchestrator currently owns; investigate any you did not start — immediately, not later.
+Use the smartest available model at the highest supported reasoning effort for the manager.
+Resolve capabilities from the active runtime; if the current session cannot be upgraded,
+report its actual settings and limitation. Never claim a model or effort change that did not occur.
+Subagents may match the manager or use less capability and effort when sufficient.
+Use `model-strategy` if installed; otherwise choose from complexity, consequence, and verifier
+strength. Cheap execution is appropriate only when the remaining work supports it.
 
-## What the main thread does itself
+Resolve these user-overridable settings once and carry them into every brief and handoff:
 
-- Talk to the user; clarify scope and success criteria.
-- Read routing files (AGENTS.md / CLAUDE.md / README chain) to route the task.
-- Write the fleet plan; dispatch and monitor subagents.
-- Review returned diffs and findings; challenge anything unverified.
-- Integrate: merge worktrees, trigger final verification (which may itself be delegated).
-- Report outcomes to the user.
+| Setting | Default | Meaning |
+|---|---|---|
+| `max_context_per_agent` | `100000` tokens | Assignment context ceiling, including every manager and worker |
+| `context_warning_fraction` | `0.8` | Start checkpointing/replanning at this fraction of the ceiling |
+| `wayfinder` | `false` | Optional continuity manager above orchestrators |
 
-## Decomposition: batches as a basis
+Use the lower of the configured ceiling and the runtime's supported context limit.
+Read [CONTEXT.md](CONTEXT.md) before dispatch for measurement and recovery rules.
+Read [WAYFINDER.md](WAYFINDER.md) only when Wayfinder mode is enabled.
 
-Split a feature the way a basis spans a space. A **batch** is a set of subagents that together are:
+## 1. Define the horizontal goal; think breadth first
 
-- **Spanning** — the union of their slices delivers the entire feature; nothing falls between agents.
-- **Independent** — disjoint *write-sets*: no two slices in a batch write the same files, so merges never collide. Reading shared code is free; only writes must be disjoint.
+The horizontal slice H is the complete chosen goal. Establish deliverables, constraints,
+exclusions, and integrated acceptance criteria before dispatch. Map the major work and
+its dependencies broadly; do not exhaustively specify distant implementation details.
+The human owns highest-level direction and consequential unresolved tradeoffs.
+Investigate resolvable uncertainty; bring genuine decision gaps with options, evidence,
+and a recommendation. Existing authorization persists; do not ask the human to manage routine handoffs.
 
-Each slice is **vertical** — an end-to-end unit of the feature, not a horizontal layer. Verticality is scale-relative and recursive: when a slice splits, its pieces are vertical with respect to *that slice's* deliverable, not the original feature — layers never become the right split at any depth.
+## 2. Decompose into vertical slices and batches
 
-Rules:
+A vertical slice is a cohesive, independently checkable contribution. The basis-vector
+analogy means collective coverage and independent construction, not literal vector algebra:
 
-1. **No dependencies between slices** → one batch, all slices dispatched in parallel worktrees.
-2. **Dependencies** → topologically sort into batches: each batch is internally parallel; the next dispatches only after the previous one has merged and verified.
-3. **Orthogonalize before you parallelize.** Shared seams (types, schemas, contracts, route registries) are where slices would collide. Extract them into a small **contract batch** dispatched first; later slices build against the frozen contract.
-4. **Context budget: ~100k tokens per agent** — its repo reading + instructions + work must fit in the smart zone. A slice too big to fit splits along another vertical seam; if it can't split without breaking independence, it becomes its own sequential batch.
-5. **Batch boundary ritual:** merge all worktrees, verify the *composed* result (spanning of tasks doesn't guarantee the composition works), then plan the next batch against the new base.
-6. No-redundancy binds *construction* only — verification fleets are deliberately redundant and stay that way.
+- Across all batches, the union of slice deliverables equals H. Include integration work.
+- Concurrent writing slices have disjoint write-sets. Shared reading and shared constraints are valid.
+- Concurrent slices have no unresolved dependency on each other's unfinished outputs or decisions.
+- Extract shared interfaces, schemas, and decisions into prerequisite work before dependent slices.
 
-## Delegation loop
+A batch is a ready set of independent slices; queue dependent batches behind verified
+prerequisites. One batch need only cover its intermediate scope. The complete sequence
+must cover H. Specify the current batch precisely and refine future batches after integration.
+Re-slice oversized contributions relative to their own deliverable. Keep connected work
+with one capable owner when splitting would create more coordination than it saves.
 
-1. **Scope** — break the request into vertical slices; sort into batches per the basis rules above.
-2. **Fleet plan** — per `model-strategy`: tier + effort per role, one line each.
-3. **Dispatch** — worktree isolation for anything that writes; the current batch runs fully parallel.
-4. **Review** — read conclusions, spot-check claims; failed verification goes back to a subagent, not into the main thread's own hands.
-5. **Land** — merge the batch, verify the composition, confirm the main checkout is clean; next batch or report.
+## 3. Allocate capability and contract-specific context
 
-## Exceptions
+Delegate only when specialization, context protection, or parallelism justifies briefing,
+reporting, and review costs. Parallelism is a benefit, not a headcount target.
+Difficult reasoning may go to an equally capable agent; the manager owns adjudication
+and the cross-slice implications. Workers have autonomy over local decisions within their contracts.
 
-Answering questions, reading/explaining code, git operations, and running read-only commands are main-thread work — no delegation theater for a one-line answer. The rule guards *implementation*, not conversation.
+Read [BRIEFS.md](BRIEFS.md) before dispatch. Give each worker exact requirements, relevant
+sources, dependency outputs, applicable constraints, and acceptance checks. Translate
+necessary global decisions into local constraints and concise rationale. Exclude unrelated
+features, conversations, and historical debate. Focused context supplies knowledge;
+model capability still determines whether the agent can use it well.
+
+## 4. Dispatch, observe, and adjust
+
+Read [SUBAGENTS.md](SUBAGENTS.md) for the active runtime. Use native tracked agents and
+isolated worktrees for writing tasks where applicable. Record exact ownership and paths.
+Workers cannot delegate. Orchestrators cannot spawn more managers. The sole exception
+is an enabled Wayfinder, which may launch orchestrators authorized to launch workers.
+
+Monitor context consumption; do not wait for a worker to declare its task too large.
+Crossing the configured ceiling means the assignment was oversized for its budget.
+Preserve progress, stop further growth, and re-slice or hand off the remaining work.
+Missing requirements, shared contract changes, or ownership collisions return to the manager;
+routine choices inside the contract stay with the worker.
+
+## 5. Verify, integrate, and continue
+
+Require output locations, acceptance evidence, consequential rationale, deviations, and
+remaining uncertainty. Reports are compressed evidence, not raw working histories.
+Follow the matching [research](doctrine/decode.md), [execution](doctrine/execute.md), or
+[review](doctrine/adjudicate.md) guidance only for that assignment.
+
+Verify individual contracts, then integrate accepted outputs and verify their composition.
+Risk and uncertainty determine independent review needs. Matching expectations is not
+verification. A clean commit records completion; it does not prove correctness.
+Update coverage and dependencies, close completed runs, and remove only reviewed, safely
+integrated temporary work. Preserve unfinished work and user changes.
+Finish when the integrated result satisfies H, not when all agents merely report success.
+
+## Human-readable operation
+
+Read [VISIBILITY.md](VISIBILITY.md) when planning or running delegated work. Centralize
+status so the human can see the goal, sequence, each assignment's purpose, model/effort,
+context usage, dependencies, and status. Explain what is happening and why at planning,
+dispatch, blockers, changed decisions, verification, integration, and handoff; provide
+periodic updates during long work. Expose concise rationale and evidence, never private
+chain of thought. Do not drown the manager or human in every child tool call.
